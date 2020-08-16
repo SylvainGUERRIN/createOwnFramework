@@ -1,0 +1,12 @@
+{
+    "name": "aines/create-own-framework",
+    "authors": [
+        {
+            "name": "SylvainG",
+            "email": "sguerrin549@gmail.com"
+        }
+    ],
+    "require": {
+        "symfony/http-foundation": "^5.1"
+    }
+}
