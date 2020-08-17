@@ -10,16 +10,26 @@ function is_leap_year($year = null) {
     return 0 === $year % 400 || (0 === $year % 4 && 0 !== $year % 100);
 }
 
-$routes = new Routing\RouteCollection();
-$routes->add('leap_year', new Routing\Route('/is_leap_year/{year}', [
-    'year' => null,
-    '_controller' => function ($request) {
-        if (is_leap_year($request->attributes->get('year'))) {
+class LeapYearController
+{
+    /**
+     * @param $year
+     * @return Response
+     */
+    public function index($year): Response
+    {
+        if (is_leap_year($year)) {
             return new Response('Yep, this is a leap year!');
         }
 
         return new Response('Nope, this is not a leap year.');
     }
+}
+
+$routes = new Routing\RouteCollection();
+$routes->add('leap_year', new Routing\Route('/is_leap_year/{year}', [
+    'year' => null,
+    '_controller' => 'LeapYearController::index',
 ]));
 
 return $routes;
