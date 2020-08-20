@@ -16,9 +16,19 @@ class LeapYearController
     {
         $leapYear = new LeapYear();
         if ($leapYear->isLeapYear($year)) {
-            return new Response('Yep, this is a leap year!');
+            $response = new Response('Yep, this is a leap year!'.mt_rand());
+        } else {
+            $response = new Response('Nope, this is not a leap year.');
         }
 
-        return new Response('Nope, this is not a leap year.');
+        $response->setTtl(10);
+        $response->setPublic();
+        $response->setMaxAge(600);
+        $response->setSharedMaxAge(600);
+        $response->setImmutable();
+        $response->setLastModified(new \DateTime());
+        $response->setEtag('abcde');
+
+        return $response;
     }
 }

@@ -5,44 +5,52 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Controller\ArgumentResolver;
+use Symfony\Component\HttpKernel\Controller\ArgumentResolverInterface;
 use Symfony\Component\HttpKernel\Controller\ControllerResolver;
+use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 //use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\Routing\Matcher\UrlMatcherInterface;
 
-class Framework
+class Framework implements HttpKernelInterface
 {
-    protected UrlMatcherInterface $matcher;
-    protected ControllerResolver $controllerResolver;
-    protected ArgumentResolver $argumentResolver;
     private EventDispatcher $dispatcher;
+    private UrlMatcherInterface $matcher;
+    private ControllerResolverInterface $controllerResolver;
+    private ArgumentResolverInterface $argumentResolver;
 
     /**
      * Framework constructor.
-     * @param UrlMatcherInterface $matcher
-     * @param ControllerResolver $controllerResolver
-     * @param ArgumentResolver $argumentResolver
      * @param EventDispatcher $dispatcher
+     * @param UrlMatcherInterface $matcher
+     * @param ControllerResolverInterface $controllerResolver
+     * @param ArgumentResolverInterface $argumentResolver
      */
     public function __construct(
+        EventDispatcher $dispatcher,
         UrlMatcherInterface $matcher,
-        ControllerResolver $controllerResolver,
-        ArgumentResolver $argumentResolver,
-        EventDispatcher $dispatcher
+        ControllerResolverInterface $controllerResolver,
+        ArgumentResolverInterface $argumentResolver
     )
     {
+        $this->dispatcher = $dispatcher;
         $this->matcher = $matcher;
         $this->controllerResolver = $controllerResolver;
         $this->argumentResolver = $argumentResolver;
-        $this->dispatcher = $dispatcher;
     }
 
     /**
      * @param Request $request
+     * @param int $type
+     * @param bool $catch
      * @return mixed|Response
      */
-    public function handle(Request $request)
-    {
+    public function handle(
+        Request $request,
+        $type = HttpKernelInterface::MASTER_REQUEST,
+        $catch = true
+    ) {
         $this->matcher->getContext()->fromRequest($request);
 
         try {

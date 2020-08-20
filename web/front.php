@@ -9,14 +9,6 @@ use Symfony\Component\HttpKernel\Controller\ControllerResolver;
 use Symfony\Component\Routing;
 use Symfony\Component\HttpKernel;
 
-function render_template($request)
-{
-    extract($request->attributes->all(), EXTR_SKIP);
-    ob_start();
-    include sprintf(__DIR__.'/../src/pages/%s.php', $_route);
-
-    return new Response(ob_get_clean());
-}
 
 $request = Request::createFromGlobals();
 $routes = include __DIR__.'/../src/app.php';
@@ -29,41 +21,16 @@ $dispatcher->addSubscriber(new Logic\ContentLengthListener());
 $dispatcher->addSubscriber(new Logic\GoogleListener());
 //$dispatcher->addListener('response', [new Logic\ContentLengthListener(), 'onResponse'], -255);
 //$dispatcher->addListener('response', [new Logic\GoogleListener(), 'onResponse']);
-$dispatcher->addListener('response', function (Logic\ResponseEvent $event) {
-    $response = $event->getResponse();
-
-    if ($response->isRedirection()
-        || ($response->headers->has('Content-Type') && false === strpos($response->headers->get('Content-Type'), 'html'))
-        || 'html' !== $event->getRequest()->getRequestFormat()
-    ) {
-        return;
-    }
-
-    $response->setContent($response->getContent().'GA CODE');
-});
-
-$dispatcher->addListener('response', function (Logic\ResponseEvent $event) {
-    $response = $event->getResponse();
-    $headers = $response->headers;
-
-    if (!$headers->has('Content-Length') && !$headers->has('Transfer-Encoding')) {
-        $headers->set('Content-Length', strlen($response->getContent()));
-    }
-});
-
-$dispatcher->addListener('response', function (Logic\ResponseEvent $event) {
-    $response = $event->getResponse();
-    $headers = $response->headers;
-
-    if (!$headers->has('Content-Length') && !$headers->has('Transfer-Encoding')) {
-        $headers->set('Content-Length', strlen($response->getContent()));
-    }
-}, -255);
 
 $controllerResolver = new ControllerResolver();
 $argumentResolver = new ArgumentResolver();
 
 $framework = new Logic\Framework($dispatcher, $matcher, $controllerResolver, $argumentResolver);
-$response = $framework->handle($request);
+$framework = new HttpKernel\HttpCache\HttpCache(
+    $framework,
+    new HttpKernel\HttpCache\Store(__DIR__.'/../cache'),
+    new HttpKernel\HttpCache\Esi(),
+    ['debug' => true]
+);
 
-$response->send();
+$framework->handle($request)->send();
