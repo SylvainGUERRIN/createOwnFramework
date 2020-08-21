@@ -1,33 +1,27 @@
 <?php
 require_once __DIR__.'/../vendor/autoload.php';
 
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Logic\StringResponseListener;
+use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel;
-use Symfony\Component\Routing;
+
+$routes = include __DIR__.'/../src/app.php';
+$container = include __DIR__.'/../src/container.php';
+
+$container->register('listener.string_response', StringResponseListener::class);
+$container->getDefinition('dispatcher')
+    ->addMethodCall('addSubscriber', [new Reference('listener.string_response')])
+;
+
+$container->setParameter('debug', true);
+echo $container->getParameter('debug');
+
+$container->register('listener.response', HttpKernel\EventListener\ResponseListener::class)
+    ->setArguments(['%charset%'])
+;
 
 $request = Request::createFromGlobals();
-$requestStack = new RequestStack();
-$routes = include __DIR__.'/../src/app.php';
 
-$context = new Routing\RequestContext();
-$matcher = new Routing\Matcher\UrlMatcher($routes, $context);
+$response = $container->get('framework')->handle($request);
 
-$controllerResolver = new HttpKernel\Controller\ControllerResolver();
-$argumentResolver = new HttpKernel\Controller\ArgumentResolver();
-
-$dispatcher = new EventDispatcher();
-$dispatcher->addSubscriber(new HttpKernel\EventListener\RouterListener($matcher, $requestStack));
-$dispatcher->addSubscriber(new Logic\StringResponseListener());
-
-$listener = new HttpKernel\EventListener\ErrorListener(
-    'Calendar\Controller\ErrorController::exception'
-);
-$dispatcher->addSubscriber($listener);
-
-$framework = new Logic\Framework($dispatcher, $controllerResolver, $requestStack, $argumentResolver);
-
-$response = $framework->handle($request);
 $response->send();
